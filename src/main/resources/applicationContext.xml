@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:c="http://www.springframework.org/schema/c"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:jee="http://www.springframework.org/schema/jee" xmlns:security="http://www.springframework.org/schema/security"
+	xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:neo4j="http://www.springframework.org/schema/data/neo4j"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans					
+					http://www.springframework.org/schema/beans/spring-beans-3.2.xsd 
+					http://www.springframework.org/schema/tx 
+					http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+					http://www.springframework.org/schema/jee 
+					http://www.springframework.org/schema/jee/spring-jee-3.2.xsd
+					http://www.directwebremoting.org/schema
+		            http://www.directwebremoting.org/schema/spring-dwr-3.0.xsd 
+		            http://www.springframework.org/schema/context 
+        			http://www.springframework.org/schema/context/spring-context-3.2.xsd
+					http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.2.xsd
+        			http://www.springframework.org/schema/security
+        			http://www.springframework.org/schema/security/spring-security-3.1.xsd
+        			http://www.springframework.org/schema/data/neo4j http://www.springframework.org/schema/data/neo4j/spring-neo4j.xsd">
+
+    <context:spring-configured/>
+    <context:annotation-config/>
+    <context:component-scan base-package="com" />
+     <tx:annotation-driven mode="proxy"/>
+    
+    <bean id="graphDatabaseService" class="org.neo4j.kernel.EmbeddedGraphDatabase">
+        <constructor-arg index="0" value="D:/Temp/migrate.graphdb"/>
+    </bean>
+    
+    <neo4j:config graphDatabaseService="graphDatabaseService" base-package="com.graphmodel"/>
+    
+    
+    <bean id="beanContext"
+		class="org.springframework.context.support.ClassPathXmlApplicationContext" />
+	<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+	<bean id="namedParameterJdbcTemplate"
+		class="org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate">
+		<constructor-arg ref="dataSource" />
+	</bean>
+	<bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="oracle.jdbc.driver.OracleDriver" />
+		<property name="url" value="jdbc:oracle:thin:@10.221.0.124:1521:SPRKEDV2" />
+		<property name="username" value="CMSREP_STAGE" />
+		<property name="password" value="CMSREP_STAGEDEV" />
+ 	</bean>	   			
+</beans>

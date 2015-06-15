@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- For assistance related to logback-translator or configuration -->
+<!-- files in general, please contact the logback user mailing list -->
+<!-- at http://www.qos.ch/mailman/listinfo/logback-user -->
+<!-- -->
+<!-- For professional support please see -->
+<!-- http://www.qos.ch/shop/products/professionalSupport -->
+<!-- -->
+<configuration debug="false">
+
+	<!-- Connect Appender - This will not ignore com.mhe.connect.middleware. 
+		Check logger element for more details -->
+	<appender name="ANALYTICS_APP_LOGS_APPENDER"
+		class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<!--See also http://logback.qos.ch/manual/appenders.html#RollingFileAppender -->
+		<File>target/logs/connect-analytics.log</File>
+		<rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+			<fileNamePattern>target/logs/connect-analytics.%i.log
+			</fileNamePattern>
+			<minIndex>1</minIndex>
+			<maxIndex>50</maxIndex>
+		</rollingPolicy>
+		<triggeringPolicy
+			class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+			<maxFileSize>200MB</maxFileSize>
+		</triggeringPolicy>
+		<encoder>
+			<pattern>%d %X{connect_log_context} %-5level %logger{36} - %msg%n%ex
+			</pattern>
+		</encoder>
+	</appender>
+	<appender name="SPRING_LOGS_APPENDER"
+		class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<!--See also http://logback.qos.ch/manual/appenders.html#RollingFileAppender -->
+		<File>target/logs/spring-bean.log</File>
+		<rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+			<fileNamePattern>target/logs/spring-bean.%i.log
+			</fileNamePattern>
+			<minIndex>1</minIndex>
+			<maxIndex>50</maxIndex>
+		</rollingPolicy>
+		<triggeringPolicy
+			class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+			<maxFileSize>200MB</maxFileSize>
+		</triggeringPolicy>
+		<encoder>
+			<pattern>%d %X{connect_log_context} %-5level %logger{36} - %msg%n%ex
+			</pattern>
+		</encoder>
+	</appender>
+	
+	<!-- Connect logging should be done in separate file -->
+	<logger name="com." level="ERROR"
+		additivity="false">
+		<appender-ref ref="ANALYTICS_APP_LOGS_APPENDER" />
+	</logger>
+	
+	<!-- ROOT should be warn -->
+	<root level="ERROR">
+		<!-- No need to set any appender-ref here. Each of the appender is set 
+			in logger element. -->
+	</root>
+	
+	<!-- Spring logger -->
+	<logger name="org.springframework" level="ERROR" additivity="false">
+		<appender-ref ref="SPRING_LOGS_APPENDER" />
+	</logger>
+
+</configuration>

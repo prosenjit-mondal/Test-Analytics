@@ -1,0 +1,355 @@
+<!--package com.dao;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
+import com.io.CSVWriter;
+import com.io.IWriter;
+import com.model.QuestionVO;
+import com.model.AssignmentVO;
+
+public class Graphdb {
+	ConnectRelationalDataReader connectRelationalDataReader =new ConnectRelationalDataReader();
+	IWriter writer=new CSVWriter();
+
+	private static String username = null;
+	private static String password = null;
+	private static String hostname = null;
+	private static String port = null;
+	private static String servicename = null;
+	private static String url = null;
+	private static String isbn = null;
+	private static String assPath = null;
+	private static String quesPath = null;
+	private static String relaPath = null;
+	private static String isbnPath = null;
+	private static String isbnQuesRelPath = null;
+	private static String path = null;
+	private static String startRow = null;
+	private static String endRow = null;
+
+	static {
+		try {
+			Properties prop = new Properties();
+			prop.load(new FileInputStream(
+					"./src/main/resources/config.properties"));
+			// DB Details
+			username = prop.getProperty("prod.username");
+			password = prop.getProperty("prod.password");
+			hostname = prop.getProperty("prod.hostname");
+			port = prop.getProperty("prod.port");
+			servicename = prop.getProperty("prod.service_name");
+			url = "jdbc:oracle:thin:" + username + "/" + password + "@"
+					+ hostname + ":" + port + "/" + servicename;
+			assPath = prop.getProperty("prod.assPath");
+			quesPath = prop.getProperty("prod.quesPath");
+			relaPath = prop.getProperty("prod.relaPath");
+			isbnPath = prop.getProperty("prod.isbnPath");
+			isbnQuesRelPath = prop.getProperty("prod.isbnQuesRelPath");
+			path = prop.getProperty("prod.path");
+
+			startRow = prop.getProperty("startRow");
+			endRow = prop.getProperty("endRow");
+
+		} catch (IOException io) {
+			io.printStackTrace();
+		}
+	}
+
+	/*public void queryBuilder() {
+		try {
+			List<String> listOfIsbn = ConnectRelationalDataReader.getBooks(url);
+			for (String strng : listOfIsbn) {
+
+				Map<AssignmentVO, List<QuestionVO>> map = ConnectRelationalDataReader
+						.getAssignmentDetails(strng, url);
+				StringBuilder assignmentSb = new StringBuilder();
+				StringBuilder questionSb = new StringBuilder();
+				StringBuilder isbnSb = new StringBuilder();
+				StringBuilder assQuesRelation = new StringBuilder();
+				StringBuilder isbnQuesRelation = new StringBuilder();
+				List<String> questionList = new ArrayList<String>();
+				int count = 1;
+				int count1 = 1;
+				String assignmentAlias = null;
+				String questionAlias = null;
+				int assignCount = 0;
+				int assignCount1 = 0;
+
+				// Create isbn Queries
+				isbnSb.append("CREATE ");
+				isbnSb.append("(isbn:BookVO { isbn:\"");
+				isbnSb.append(strng);
+				isbnSb.append("\"})");
+				OutputFileWriter.writeToFile(isbnSb.toString(), path);
+
+				for (AssignmentVO assignmentVO : map.keySet()) {
+					assignCount++;
+					assignmentSb.setLength(0);
+					questionSb.setLength(0);
+					assQuesRelation.setLength(0);
+					if (assignCount == 50) {
+						assignmentSb.append("\n");
+						assignCount = 0;
+					}
+
+					assignmentSb.append("CREATE ");
+					questionSb.append("CREATE ");
+					assQuesRelation.append("CREATE ");
+
+					assignmentAlias = "aa" + count++;
+					assignmentSb.append("(");
+					assignmentSb.append(assignmentAlias);
+					assignmentSb.append(":Assignment { ");
+					assignmentSb.append("assignmentId:");
+					assignmentSb.append(assignmentVO.getAssignmentId());
+					assignmentSb.append(",");
+					assignmentSb.append("assignmentTitle:\"");
+					assignmentSb.append(assignmentVO.getAssignmentTitle()
+							.replaceAll("/", "").replaceAll("\\", ""));
+					assignmentSb.append("\",");
+					assignmentSb.append("assignmentType:\"");
+					assignmentSb.append(assignmentVO.getAssignmentType());
+					assignmentSb.append("\"}),");
+					for (QuestionVO assnmDetlsVo : map.get(assignmentVO)) {
+						questionAlias = "qq" + count1++;
+						questionList.add(questionAlias);
+						questionSb.append("(");
+						questionSb.append(questionAlias);
+						questionSb.append(":Question { ");
+						questionSb.append("nativeAlaId:");
+						questionSb.append(assnmDetlsVo.getNativeAlaID());
+						questionSb.append(",");
+						questionSb.append("questionTitle:\"");
+						questionSb.append(assnmDetlsVo.getActivityItemtitle()
+								.replaceAll("/", "").replaceAll("\\", ""));
+						questionSb.append("\",");
+						questionSb.append("questionType:\"");
+						questionSb.append(assignmentVO.getAssignmentType());
+						questionSb.append("\"}),");
+
+						// creating assignment and question relationship
+						assQuesRelation.append("(");
+						assQuesRelation.append(assignmentAlias);
+						assQuesRelation.append(")-[:contains]->(");
+						assQuesRelation.append(questionAlias);
+						assQuesRelation.append("),");
+
+					}
+
+					assQuesRelation.setLength(assQuesRelation.length() - 1);
+					questionSb.setLength(questionSb.length() - 1);
+					assignmentSb.setLength(assignmentSb.length() - 1);
+
+					OutputFileWriter.writeToFile(assignmentSb.toString(), path);
+					OutputFileWriter.writeToFile(questionSb.toString(), path);
+					OutputFileWriter.writeToFile(assQuesRelation.toString(),
+							path);
+
+				}
+
+				// Create ISBn Question relation Queries
+				if (questionList != null && !questionList.isEmpty()) {
+					isbnQuesRelation.append("CREATE ");
+				}
+				for (String str : questionList) {
+					if (++assignCount1 == 250) {
+						isbnQuesRelation
+								.setLength(isbnQuesRelation.length() - 1);
+						isbnQuesRelation.append("\n");
+						assignCount1 = 0;
+						isbnQuesRelation.append("CREATE ");
+					}
+
+					isbnQuesRelation.append("(");
+					isbnQuesRelation.append("isbn");
+					isbnQuesRelation.append(")-[:has]->(");
+					isbnQuesRelation.append(str);
+					isbnQuesRelation.append("),");
+				}
+				OutputFileWriter.writeToFile(isbnQuesRelation.toString(), path);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}*/
+
+	List<String> listOfIsbn = connectRelationalDataReader.getBooks(url);
+
+	/**
+	 * createBookQuery
+	 * 
+	 * @param isbnList
+	 * @return String
+	 */
+	public void createBookQuery(List<String> isbnList) {
+		StringBuilder isbnSb = new StringBuilder();
+		try {
+			for (String isbn : isbnList) {
+					// Create isbn Queries
+					isbnSb.append("CREATE ");
+					isbnSb.append("(isbn:BookVO { isbn:\"");
+					isbnSb.append(isbn);
+					isbnSb.append("\"})");
+				}
+			writer.graphDataWriter(isbnSb.toString());
+			createAssignmentQuery(isbn);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		//return isbnSb.toString();
+	}
+
+	public void createAssignmentQuery(String isbn) {
+		Map<AssignmentVO, List<QuestionVO>> map = null;
+		StringBuilder assignmentSb = new StringBuilder();
+		String assignmentAlias = null;
+		try {
+			
+				map = connectRelationalDataReader.getAssignmentDetails(isbn, url);
+				int assignCount = 0;
+				int count = 1;
+				for (AssignmentVO assignmentVO : map.keySet()) {
+					assignCount++;
+					assignmentSb.setLength(0);
+					if (assignCount == 50) {
+						assignmentSb.append("\n");
+						assignCount = 0;
+					}
+					assignmentSb.append("CREATE ");
+					assignmentAlias = "aa" + count++;
+					assignmentSb.append("(");
+					assignmentSb.append(assignmentAlias);
+					assignmentSb.append(":Assignment { ");
+					assignmentSb.append("assignmentId:");
+					assignmentSb.append(assignmentVO.getAssignmentId());
+					assignmentSb.append(",");
+					assignmentSb.append("assignmentTitle:\"");
+					assignmentSb.append(assignmentVO.getAssignmentTitle()
+							.replaceAll("/", "").replaceAll("\\", ""));
+					assignmentSb.append("\",");
+					assignmentSb.append("assignmentType:\"");
+					assignmentSb.append(assignmentVO.getAssignmentType());
+					assignmentSb.append("\"}),");
+					assignmentSb.setLength(assignmentSb.length() - 1);
+					writer.graphDataWriter(assignmentSb.toString());
+					createQuestionQuery(map, assignmentVO);
+				}
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void createQuestionQuery(Map<AssignmentVO, List<QuestionVO>> map,
+			AssignmentVO assignmentVO) {
+		List<String> questionList = new ArrayList<String>();
+		StringBuilder questionSb = new StringBuilder();
+		try {
+			String questionAlias = null;
+			int count1 = 1;
+			
+			for (QuestionVO questionVO : map.get(assignmentVO)) {
+				questionAlias = "qq" + count1++;
+				questionList.add(questionAlias);
+				questionSb.append("(");
+				questionSb.append(questionAlias);
+				questionSb.append(":Question { ");
+				questionSb.append("nativeAlaId:");
+				questionSb.append(questionVO.getNativeAlaID());
+				questionSb.append(",");
+				questionSb.append("questionTitle:\"");
+				questionSb.append(questionVO.getActivityItemtitle()
+						.replaceAll("/", "").replaceAll("\\", ""));
+				questionSb.append("\",");
+				questionSb.append("questionType:\"");
+				questionSb.append(assignmentVO.getAssignmentType());
+				questionSb.append("\"}),");
+				questionSb.setLength(questionSb.length() - 1);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void createAsignmentQuestionRelationship(
+			Map<AssignmentVO, List<QuestionVO>> map, String assignmentAlias,
+			String questionAlias) {
+		StringBuilder assQuesRelation = new StringBuilder();
+		try {
+			for (AssignmentVO assignmentVO : map.keySet()) {
+				assQuesRelation.setLength(0);
+				assQuesRelation.append("CREATE ");
+				for (QuestionVO questionVO : map.get(assignmentVO)) {
+					assQuesRelation.append("(");
+					assQuesRelation.append(assignmentAlias);
+					assQuesRelation.append(")-[:contains]->(");
+					assQuesRelation.append(questionAlias);
+					assQuesRelation.append("),");
+				}
+				assQuesRelation.setLength(assQuesRelation.length() - 1);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void createIsbnQuestionRelationship(List<String> questionList) {
+		StringBuilder isbnQuesRelation = new StringBuilder();
+		int assignCount1 = 0;
+		try {
+			if (questionList != null && !questionList.isEmpty()) {
+				isbnQuesRelation.append("CREATE ");
+			}
+			for (String str : questionList) {
+				if (++assignCount1 == 250) {
+					isbnQuesRelation.setLength(isbnQuesRelation.length() - 1);
+					isbnQuesRelation.append("\n");
+					assignCount1 = 0;
+					isbnQuesRelation.append("CREATE ");
+				}
+
+				isbnQuesRelation.append("(");
+				isbnQuesRelation.append("isbn");
+				isbnQuesRelation.append(")-[:has]->(");
+				isbnQuesRelation.append(str);
+				isbnQuesRelation.append("),");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+	}
+	/*public void graphDataWriter(String sqlStr){
+			//createBookQuery();
+		Properties prop = null;
+		String path = null;
+		try {
+			prop = new Properties();
+			prop.load(new FileInputStream(
+					"./src/main/resources/config.properties"));
+			path = prop.getProperty("prod.path");; 
+			OutputFileWriter.writeToFile(sqlStr,path);
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}*/
+
+	/*
+	 * public static void main(String[] args) { queryBuilder(); }
+	 */
+
+
+
+
+
+}
+-->
